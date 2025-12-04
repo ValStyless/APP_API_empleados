@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -16,8 +15,8 @@ import { EmpleadosModule } from './empleados/empleados.module';
             host: "localhost",
             port: 5432,
             username: "postgres",
-            password: "12345",
-            database: "EMPLEADOSdsm44",
+            password: "Pollo13",
+            database: "DB_EMPLEADOS",
             entities:  [ Empleado, RegistroAsistencia, RegistroProduccion ],
             synchronize: true,
             autoLoadEntities: true,

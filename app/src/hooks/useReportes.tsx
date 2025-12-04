@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { EmpleadosApi } from "./../api/empleadosApi";
+import { EmpleadosApi } from "../api/empleadosApi";
 import {
     ReporteAsistencia,
     AsistenciaEmpleado,
@@ -7,13 +7,23 @@ import {
     DiasTrabajados,
     ReporteProduccion,
     HorasTrabajadas,
-    UnidadesProducidas,
-} from "./../interfaces/empleadosInterface";
+    UnidadesProducidas
+} from "../interfaces/empleadosInterface";
 
-const BASE_URL = "http://192.168.1.45:3009/api/dsm44/empleados";
+import { parseBoolean } from "../interfaces/empleadosInterface";
+
+// Helper para normalizar fechas
+const normalizeDate = (dateString: any): string => {
+    if (!dateString) return '';
+    try {
+        return new Date(dateString).toISOString();
+    } catch {
+        return String(dateString);
+    }
+};
 
 export const useReporteAsistencia = () => {
-    const [data, setData] = useState<ReporteAsistencia | null>(null);
+    const [data, setData] = useState<ReporteAsistencia & { totalHorasTrabajadas?: number } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -21,17 +31,37 @@ export const useReporteAsistencia = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await EmpleadosApi.get<ReporteAsistencia>(
-                `${BASE_URL}/reporte-asistencia-empleado?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
-            );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando reporte asistencia");
-            console.error(err);
+            const url = `/empleados/reporte-asistencia-empleado?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`;
+            console.log(`📥 Cargando: ${url}`);
+            const response = await EmpleadosApi.get(url);
+            // Normalizar datos
+            const normalizedData = {
+                ...response.data,
+                data: response.data.data?.map(item => ({
+                    ...item,
+                    a_fecha: normalizeDate(item.a_fecha),
+                    a_horaEntrada: item.a_horaEntrada && item.a_horaEntrada !== '--:--' ? normalizeDate(item.a_horaEntrada) : '',
+                    a_horaSalida: item.a_horaSalida && item.a_horaSalida !== '--:--' ? normalizeDate(item.a_horaSalida) : '',
+                    a_turno: String(item.a_turno || ''),
+                    a_horasTrabajadas: item.a_horasTrabajadas ? Number(item.a_horasTrabajadas) : 0
+                })) || [],
+                totalHorasTrabajadas: response.data.totalHorasTrabajadas || 0
+            };
+            setData(normalizedData);
+            console.log(`✅ Reporte asistencia cargado: ${normalizedData.total} registros, total horas: ${normalizedData.totalHorasTrabajadas}`);
+        } catch (err: any) {
+            const errorMsg = err.response?.data?.message || "Error cargando reporte de asistencia";
+            setError(errorMsg);
+            console.error("❌ Error useReporteAsistencia:", {
+                message: err.message,
+                url: err.config?.url,
+                status: err.response?.status
+            });
         } finally {
             setIsLoading(false);
         }
     };
+    
     return { data, isLoading, error, loadData };
 };
 
@@ -44,13 +74,17 @@ export const useAsistenciaEmpleado = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
             const response = await EmpleadosApi.get<AsistenciaEmpleado>(
-                `${BASE_URL}/asistencia-empleado?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                `/empleados/asistencia-empleado?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
             );
+            
             setData(response.data);
-        } catch (err) {
-            setError("Error cargando asistencia");
-            console.error(err);
+            console.log(`✅ Asistencia empleado: ${response.data.total_asistencias} asistencias`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando asistencia");
+            console.error("❌ Error useAsistenciaEmpleado:", err.message);
         } finally {
             setIsLoading(false);
         }
@@ -67,13 +101,31 @@ export const useNomina = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
             const response = await EmpleadosApi.get<Nomina>(
-                `${BASE_URL}/nomina?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                `/empleados/nomina?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
             );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando nómina");
-            console.error(err);
+            
+            // Normalizar datos de nómina
+            const normalizedData = {
+                ...response.data,
+                asistencias: response.data.asistencias?.map(asistencia => ({
+                    ...asistencia,
+                    fecha: normalizeDate(asistencia.fecha),
+                    horaEntrada: normalizeDate(asistencia.horaEntrada),
+                    horaSalida: normalizeDate(asistencia.horaSalida),
+                    puntual: parseBoolean(asistencia.puntual),
+                    turno: String(asistencia.turno || ''),
+                    estatus: String(asistencia.estatus || '')
+                })) || []
+            };
+            
+            setData(normalizedData);
+            console.log(`✅ Nómina cargada: ${normalizedData.diasTrabajados} días, $${normalizedData.total}`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando nómina");
+            console.error("❌ Error useNomina:", err.message);
         } finally {
             setIsLoading(false);
         }
@@ -90,13 +142,25 @@ export const useDiasTrabajados = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
             const response = await EmpleadosApi.get<DiasTrabajados[]>(
-                `${BASE_URL}/dias-trabajados?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                `/empleados/dias-trabajados?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
             );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando días trabajados");
-            console.error(err);
+            
+            // Normalizar fechas
+            const normalizedData = response.data.map(item => ({
+                ...item,
+                a_fecha: normalizeDate(item.a_fecha),
+                a_horaEntrada: normalizeDate(item.a_horaEntrada),
+                a_horaSalida: normalizeDate(item.a_horaSalida)
+            }));
+            
+            setData(normalizedData);
+            console.log(`✅ Días trabajados: ${normalizedData.length} registros`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando días trabajados");
+            console.error("❌ Error useDiasTrabajados:", err.message);
         } finally {
             setIsLoading(false);
         }
@@ -113,13 +177,21 @@ export const useReporteProduccion = () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await EmpleadosApi.get<ReporteProduccion[]>(
-                `${BASE_URL}/reporte-produccion?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
-            );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando reporte producción");
-            console.error(err);
+            
+            const response = await EmpleadosApi.get(`/empleados/reporte-produccion?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`);
+            // Normalizar datos agrupados por día
+            const normalizedData = response.data.map(item => ({
+                ...item,
+                p_fecha: normalizeDate(item.p_fecha),
+                p_turno: String(item.p_turno || ''),
+                p_unidadesProducidas: Number(item.p_unidadesProducidas) || 0
+            }));
+            setData(normalizedData);
+            console.log(`✅ Reporte producción: ${normalizedData.length} registros (agrupados por día)`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando reporte de producción");
+            console.error("❌ Error useReporteProduccion:", err.message);
         } finally {
             setIsLoading(false);
         }
@@ -136,13 +208,25 @@ export const useHorasTrabajadas = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
             const response = await EmpleadosApi.get<HorasTrabajadas[]>(
-                `${BASE_URL}/horas-trabajadas?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                `/empleados/horas-trabajadas?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
             );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando horas trabajadas");
-            console.error(err);
+            
+            // Normalizar datos
+            const normalizedData = response.data.map(item => ({
+                ...item,
+                a_fecha: normalizeDate(item.a_fecha),
+                a_horasTrabajadas: Number(item.a_horasTrabajadas) || 0,
+                a_turno: String(item.a_turno || '')
+            }));
+            
+            setData(normalizedData);
+            console.log(`✅ Horas trabajadas: ${normalizedData.length} registros`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando horas trabajadas");
+            console.error("❌ Error useHorasTrabajadas:", err.message);
         } finally {
             setIsLoading(false);
         }
@@ -159,13 +243,27 @@ export const useUnidadesProducidas = () => {
         try {
             setIsLoading(true);
             setError(null);
+            
             const response = await EmpleadosApi.get<UnidadesProducidas>(
-                `${BASE_URL}/unidades-producidas?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
+                `/empleados/unidades-producidas?id_empleado=${id_empleado}&fechaInicio=${fechaInicio}&fechaFin=${fechaFin}`
             );
-            setData(response.data);
-        } catch (err) {
-            setError("Error cargando unidades producidas");
-            console.error(err);
+            
+            // Normalizar datos
+            const normalizedData = {
+                ...response.data,
+                empleado: {
+                    ...response.data.empleado,
+                    area: String(response.data.empleado?.area || ''),
+                    turno: String(response.data.empleado?.turno || '')
+                }
+            };
+            
+            setData(normalizedData);
+            console.log(`✅ Unidades producidas: ${normalizedData.total?.[0]?.total_producido || '0'} unidades`);
+            
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Error cargando unidades producidas");
+            console.error("❌ Error useUnidadesProducidas:", err.message);
         } finally {
             setIsLoading(false);
         }

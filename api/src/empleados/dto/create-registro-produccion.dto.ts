@@ -2,18 +2,17 @@ import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositi
 import { Turno } from '../enum/turno.enum';
 
 export class CreateRegistroProduccion {
-    @IsNotEmpty()
     @IsNumber()
-    @IsOptional()
-    id_empleado?:        number;
+    @IsNotEmpty()
+    id_empleado: number;
 
     @IsNotEmpty()
     @IsDateString()
-    fecha:              string;
+    fecha: string;
 
     @IsOptional()
     @IsEnum(Turno)
-    turno:              Turno;
+    turno: Turno;
 
     @IsOptional()
     @IsInt()

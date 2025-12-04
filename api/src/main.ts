@@ -10,19 +10,21 @@ const getLocalIp = () =>
 
 const capibara = async () => {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({
+    app.enableCors({
       origin: [
-          "http://localhost:8081",
-          "http://192.168.1.45:8081"
+        "http://localhost:8081",
+        "http://1192.168.1.66:8081",
+        "http://localhost:8082",
+        "http://192.168.1.66:8082"
       ],
       methods: "GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS",
       credentials: true
-  });
+    });
   app.use(json({limit: "100mb"}));
   app.use(urlencoded({ limit: '100mb', extended: true }));
   app.setGlobalPrefix("api/dsm44");
-  await app.listen(3009);
-  console.log(`http://${getLocalIp()}:3009`);
+  await app.listen(3000);
+  console.log(`http://${getLocalIp()}:3000`);
 }
 
 capibara();

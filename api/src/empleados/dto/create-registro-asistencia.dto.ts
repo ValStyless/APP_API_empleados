@@ -3,36 +3,35 @@ import { Turno } from '../enum/turno.enum';
 import { StatusTurno } from '../enum/status-turno.enum';
 
 export class CreateRegistroAsistencia {
-  @IsNotEmpty()
   @IsNumber()
+  @IsNotEmpty()
+  id_empleado: number;
+
+  @IsNotEmpty()
+  @IsDateString()
+  fecha: string;
+
   @IsOptional()
-  id_empleado?:      number;
-
-  @IsNotEmpty()
   @IsDateString()
-  fecha:            string;
+  horaEntrada: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  horaEntrada:      string;
-
-  @IsNotEmpty()
-  @IsDateString()
-  horaSalida:       string;
+  horaSalida: string;
 
   @IsOptional()
   @IsBoolean()
-  puntual:          boolean;
+  puntual: boolean;
 
   @IsOptional()
   @IsNumber()
-  horasTrabajadas:  number;
+  horasTrabajadas: number;
 
   @IsOptional()
   @IsEnum(Turno)
-  turno:            Turno;
+  turno: Turno;
 
   @IsOptional()
   @IsEnum(StatusTurno)
-  estatus:          StatusTurno;
+  estatus: StatusTurno;
 }

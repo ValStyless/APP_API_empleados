@@ -18,39 +18,39 @@ export class CreateEmpleado {
     @IsString()
     @MinLength(3)
     @MaxLength(255)
-    nombre:         string;
+    nombre: string;
 
     @IsString()
     @MinLength(3)
     @MaxLength(255)
-    apellido_p:     string;
+    apellido_p: string;
 
     @IsString()
     @MinLength(3)
     @MaxLength(255)
-    apellido_m:     string;
+    apellido_m: string;
    
-    @IsEnum( Area )
+    @IsEnum(Area)
     @IsOptional()
-    area:           Area;
+    area: Area;
 
-    @IsEnum( Turno )
+    @IsEnum(Turno)
     @IsOptional()
-    turno:          Turno;
+    turno: Turno;
 
     @IsNumber()
     @IsPositive()
-    salarioDiario:  number;
+    salarioDiario: number;
 
     @IsBoolean()
     @IsOptional()
-    activo:         boolean;
+    activo: boolean;
 
-    @Type( () => RegistroProduccion )
+    @Type(() => RegistroProduccion)
     @IsOptional()
-    produccion?:     RegistroProduccion[];
+    produccion?: RegistroProduccion[];
 
-    @Type( () => RegistroAsistencia )
+    @Type(() => RegistroAsistencia)
     @IsOptional()
-    asistencia?:     RegistroAsistencia[];
+    asistencia?: RegistroAsistencia[];
 }
